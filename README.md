@@ -2,7 +2,7 @@
 A Cloudflare Worker for File Download and List API:  This Cloudflare Worker serves as a versatile gateway for users to download files and retrieve a list of available files through API calls.
 
 [1st Step]
-Creating The Script For Cloudflare
+#Creating The Script For Cloudflare
 1- visit: https://workergen.sinaax4.workers.dev/
 2- Sign in with your google account and give required access.
 3- Copy the generated script.
@@ -13,4 +13,4 @@ Creating The Script For Cloudflare
 [Now Your Script Is Ready]
 
 [2nd Step]
-Hosting The Cloudflare Worker
+#Hosting The Cloudflare Worker
