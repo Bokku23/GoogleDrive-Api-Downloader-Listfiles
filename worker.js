@@ -1,6 +1,9 @@
 //Past Worker Genenated Script Below This
 
 
+//(homePathId)="root" = MyDrive 
+//(homePathId)="SharedDriveID" = SharedDrive
+const homePathId = "root";
 
 //Past Worker Genenated Script Above This
 // Access Token
@@ -89,12 +92,23 @@ async function getFolderByName(accessToken, parentId, folderName) {
     try {
         folderName = decodeURIComponent(folderName);
         const body_Get = new URLSearchParams();
-        body_Get.set("corpora", "drive");
-        body_Get.set("driveId", homePathId);
-        body_Get.set("includeItemsFromAllDrives", "true");
-        body_Get.set("supportsAllDrives", "true");
-        body_Get.set("q", `'${parentId}' in parents and trashed=false and mimeType='application/vnd.google-apps.folder' and name='${folderName}'`);
-        body_Get.set("fields", "files(id, name, mimeType)");
+        // @ts-ignore
+        if (homePathId === "root") {
+            // If homePathId is set to "root," use 'root' as the parent ID for MyDrive.
+            body_Get.set("includeItemsFromAllDrives", "true");
+            body_Get.set("supportsAllDrives", "true");
+            body_Get.set("q", `'${parentId}' in parents and trashed=false and mimeType='application/vnd.google-apps.folder' and name='${folderName}'`);
+            body_Get.set("fields", "files(id, name, mimeType)");
+        } else {
+            // Use the specified homePathId for Shared Drive.
+            body_Get.set("corpora", "drive");
+            body_Get.set("driveId", homePathId);
+            body_Get.set("includeItemsFromAllDrives", "true");
+            body_Get.set("supportsAllDrives", "true");
+            body_Get.set("q", `'${parentId}' in parents and trashed=false and mimeType='application/vnd.google-apps.folder' and name='${folderName}'`);
+            body_Get.set("fields", "files(id, name, size, mimeType)");
+        }
+        
 
         const response = await fetch(`${driveApiUrl}?${body_Get.toString()}`, {
             headers: {
@@ -109,7 +123,9 @@ async function getFolderByName(accessToken, parentId, folderName) {
         const data = await response.json();
         if (data.files.length > 0) {
             return data.files[0];
+            console.log ("Data")
         } else {
+          console.log ("no data")
             return null;
         }
     } catch (error) {
@@ -119,15 +135,27 @@ async function getFolderByName(accessToken, parentId, folderName) {
 }
 
 //Fetch Drive Items
-async function fetchDriveItems(accessToken, query) {
+async function fetchDriveItems(accessToken, query, pageToken = '') {
     try {
         const body_Get = new URLSearchParams();
-        body_Get.set("corpora", "drive");
-        body_Get.set("driveId", homePathId);
-        body_Get.set("includeItemsFromAllDrives", "true");
-        body_Get.set("supportsAllDrives", "true");
-        body_Get.set("q", query);
-        body_Get.set("fields", "files(id, name, size, mimeType)");
+        // @ts-ignore
+        if (homePathId === "root") {
+            // If homePathId is set to "root," use 'root' as the parent ID for MyDrive.
+            body_Get.set("includeItemsFromAllDrives", "true");
+            body_Get.set("supportsAllDrives", "true");
+            body_Get.set("q", query);
+            body_Get.set("fields", "files(id, name, size, mimeType),nextPageToken");
+            body_Get.set("pageToken", pageToken); 
+        } else {
+            // Use the specified homePathId for Shared Drive.
+            body_Get.set("corpora", "drive");
+            body_Get.set("driveId", homePathId);
+            body_Get.set("includeItemsFromAllDrives", "true");
+            body_Get.set("supportsAllDrives", "true");
+            body_Get.set("q", query);
+            body_Get.set("fields", "files(id, name, size, mimeType),nextPageToken");
+            body_Get.set("pageToken", pageToken); 
+        }
 
         const response = await fetch(`${driveApiUrl}?${body_Get.toString()}`, {
             headers: {
@@ -140,12 +168,26 @@ async function fetchDriveItems(accessToken, query) {
         }
 
         const data = await response.json();
-        return data.files;
+        
+        console.log(JSON.stringify(data, null, 2));
+
+
+        // Check if nextPageToken is present in the response
+        const nextPageToken = data.nextPageToken;
+
+        if (nextPageToken) {
+            // Make a recursive call to fetch the next page of data
+            const nextPageData = await fetchDriveItems(accessToken, query, nextPageToken);
+            return [...data.files, ...nextPageData];
+        } else {
+            return data.files;
+        }
     } catch (error) {
         console.error("Error fetching Drive items:", error);
         throw error;
     }
 }
+
 
 //Download Request
 async function handleDownload(request) {
@@ -189,7 +231,16 @@ async function handleDownload(request) {
 async function handleRootRequest(request) {
     try {
         const accessToken = await fetchAccessToken();
-        const driveItems = await fetchDriveItems(accessToken, `'${homePathId}' in parents and trashed=false`);
+        let driveItems;
+        // @ts-ignore        
+        if (homePathId === "root") {
+            // Handle requests for MyDrive
+            driveItems = await fetchDriveItems(accessToken, `'root' in parents and trashed=false`);
+        } else {
+            // Handle requests for the specified Shared Drive
+            driveItems = await fetchDriveItems(accessToken, `'${homePathId}' in parents and trashed=false`);
+        }
+
         const response = new Response(JSON.stringify(driveItems), {
             status: 200,
             headers: {
