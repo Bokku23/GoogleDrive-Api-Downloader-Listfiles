@@ -2,6 +2,10 @@
 
 A Cloudflare Worker for File Download and List API:  This Cloudflare Worker serves as a versatile gateway for users to download files and retrieve a list of available files through API calls.
 
+By deploying this Cloudflare Worker, you can have a  efficient way to download files and retrieve file listings via API calls, all while benefiting from Cloudflare's global network for speed and reliability.
+
+Direct Download and Streamable Links For any files in the Google Drive.
+
 # [1st Step] 
 
 # Creating The Script For Cloudflare
