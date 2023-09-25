@@ -23,3 +23,14 @@ A Cloudflare Worker for File Download and List API:  This Cloudflare Worker serv
 # [2nd Step] 
 
 # Hosting The Cloudflare Worker
+
+1- Creating a Cloudflare account (if you dont have an account).
+
+2- Login to your Cloudflare account and proceed to workers page.
+
+3- Watch the video below to see how to setup the worker and use the api.
+
+
+
+
+# Created By Bokku.
