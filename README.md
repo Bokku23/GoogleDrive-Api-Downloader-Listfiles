@@ -6,6 +6,16 @@ By deploying this Cloudflare Worker, you can have a  efficient way to download f
 
 Direct Download and Streamable Links For any files in the Google Drive.
 
+# End Points
+[Root = CloudflareUrl]
+* Example: https://apitutorial.sinaax4.workers.dev/
+
+[Folder Listing = CloudflareUrl/Foldername
+* Example: https://apitutorial.sinaax4.workers.dev/Movies
+
+[Download Files = CloudflareUrl/download/Filename.ext]
+* Example: https://apitutorial.sinaax4.workers.dev/download/Supercell.2023.720p.AMZN.WEBRip.800MB.x264-GalaxyRG.mkv
+
 # [1st Step] 
 
 # Creating The Script For Cloudflare
