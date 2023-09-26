@@ -1,10 +1,8 @@
 //Past Worker Genenated Script Below This
 
 
+
 //Past Worker Genenated Script Above This
-//(homePathId)="root" = MyDrive 
-//(homePathId)="SharedDriveID" = SharedDrive
-const homePathId = "root";
 
 // Access Token
 async function fetchAccessToken() {
