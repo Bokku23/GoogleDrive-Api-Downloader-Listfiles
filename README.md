@@ -11,10 +11,10 @@ Direct Download and Streamable Links For any files in the Google Drive.
 * Example: https://apitutorial.sinaax4.workers.dev/
 
 [Folder Listing = CloudflareUrl/Foldername
-* Example: https://apitutorial.sinaax4.workers.dev/Movies
+* Example: https://apitutorial.sinaax4.workers.dev/Tutorial
 
 [Download Files = CloudflareUrl/download/Filename.ext]
-* Example: https://apitutorial.sinaax4.workers.dev/download/Supercell.2023.720p.AMZN.WEBRip.800MB.x264-GalaxyRG.mkv
+* Example: https://apitutorial.sinaax4.workers.dev/download/Test file.pdf
 
 # [1st Step] 
 
