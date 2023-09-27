@@ -193,7 +193,8 @@ async function handleDownload(request) {
         const accessToken = await fetchAccessToken();
         const url = new URL(request.url);
         const path = url.pathname;
-        const filename = path.split('/').pop();
+        const cleanPath = path.replace(/%20/g, ' ');
+        const filename = cleanPath.split('/').pop();
         const query = `trashed=false and name='${filename}'`;
         const fileMetadata = await fetchDriveItems(accessToken, query);
         if (fileMetadata.length === 0) {
