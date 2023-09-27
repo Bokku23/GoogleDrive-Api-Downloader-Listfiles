@@ -14,7 +14,7 @@ Direct Download and Streamable Links For any files in the Google Drive.
 * Example: https://apitutorial.sinaax4.workers.dev/Tutorial
 
 [Download Files = CloudflareUrl/download/Filename.ext]
-* Example: https://apitutorial.sinaax4.workers.dev/download/Test%20file.pdf
+* Example: https://apitutorial.sinaax4.workers.dev/download/Test%20file.png
 
 # [1st Step] 
 
