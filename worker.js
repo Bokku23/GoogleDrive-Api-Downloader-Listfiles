@@ -166,9 +166,6 @@ async function fetchDriveItems(accessToken, query, pageToken = '') {
         }
 
         const data = await response.json();
-        
-        console.log(JSON.stringify(data, null, 2));
-
 
         // Check if nextPageToken is present in the response
         const nextPageToken = data.nextPageToken;
@@ -186,15 +183,14 @@ async function fetchDriveItems(accessToken, query, pageToken = '') {
     }
 }
 
-
 //Download Request
 async function handleDownload(request) {
     try {
         const accessToken = await fetchAccessToken();
         const url = new URL(request.url);
         const path = url.pathname;
-        const cleanPath = path.replace(/%20/g, ' ');
-        const filename = cleanPath.split('/').pop();
+        const decodedPath = decodeURIComponent(path);
+        const filename = decodedPath.split('/').pop();
         const query = `trashed=false and name='${filename}'`;
         const fileMetadata = await fetchDriveItems(accessToken, query);
         if (fileMetadata.length === 0) {
