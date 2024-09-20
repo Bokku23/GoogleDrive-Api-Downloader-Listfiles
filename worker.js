@@ -505,4 +505,4 @@ async function handleRootRequest(request) {
         console.error("Error:", error.message);
         return new Response(`Error: ${error.message}`, { status: 500 });
     }
-} can you update this
+}
