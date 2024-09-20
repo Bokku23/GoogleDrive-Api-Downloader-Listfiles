@@ -36,42 +36,88 @@ async function fetchAccessToken() {
     }
 }
 
-//Listener For Request or Download
+//Listener For Request, Stream, or Root Access
 addEventListener("fetch", (event) => {
     const request = event.request;
     const url = new URL(request.url);
 
     if (url.pathname === '/') {
         event.respondWith(handleRootRequest(request));
-    } else if (url.pathname.startsWith("/download/")) {
-        event.respondWith(handleDownload(request));
+    } else if (url.pathname.startsWith("/download/")) {    // Stream Handler
+        event.respondWith(handleStream(request));
     } else {
-        event.respondWith(handleRequest(request));
+        // Handle other cases if needed, or respond with a default message
+        event.respondWith(new Response("Resource not found", { status: 404 }));
     }
 });
 
-//Handle Requests
-async function handleRequest(request) {
+// Stream Request with Range Support
+async function handleStream(request) {
     try {
         const accessToken = await fetchAccessToken();
         const url = new URL(request.url);
         const path = url.pathname;
-        const cleanPath = path.replace(/^\/+|\/+$/g, '');
-        const pathSegments = cleanPath.split('/');
-
-        let currentParentId = homePathId;
-
-        for (const segment of pathSegments) {
-            const folder = await getFolderByName(accessToken, currentParentId, segment);
-
-            if (folder) {
-                currentParentId = folder.id;
-            } else {
-                return new Response("Resource not found", { status: 404 });
-            }
+        const decodedPath = decodeURIComponent(path);
+        const filename = decodedPath.split('/').pop();
+        const query = `trashed=false and name='${filename}'`;
+        const fileMetadata = await fetchDriveItems(accessToken, query);
+        if (fileMetadata.length === 0) {
+            return new Response("File not found", { status: 404 });
         }
 
-        const driveItems = await fetchDriveItems(accessToken, `'${currentParentId}' in parents and trashed=false`);
+        const fileId = fileMetadata[0].id;
+        const streamUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+
+        // Check if the request has a Range header
+        const range = request.headers.get('Range');
+        const streamRequestHeaders = {
+            Authorization: `Bearer ${accessToken}`,
+        };
+
+        if (range) {
+            streamRequestHeaders['Range'] = range;  // Include Range header in the request
+        }
+
+        const streamRequest = new Request(streamUrl, {
+            headers: streamRequestHeaders,
+        });
+
+        const fileResponse = await fetch(streamRequest);
+
+        // If the response includes a 'Content-Range' header, we assume it's a partial response for range requests
+        const statusCode = fileResponse.status === 206 ? 206 : 200;  // 206 = Partial Content, 200 = OK
+        const contentRange = fileResponse.headers.get('Content-Range') || '';
+        const contentType = fileResponse.headers.get('Content-Type') || 'application/octet-stream';
+
+        return new Response(fileResponse.body, {
+            status: statusCode,
+            headers: {
+                'Content-Type': contentType,
+                'Content-Range': contentRange,  // Pass through the Content-Range header if present
+                'Accept-Ranges': 'bytes',  // Let the client know the server supports range requests
+                'Content-Disposition': 'inline',  // Ensure inline streaming
+            },
+        });
+    } catch (error) {
+        console.error("Error streaming file:", error);
+        return new Response(`Error: ${error.message}`, { status: 500 });
+    }
+}
+
+//Root Url Request
+async function handleRootRequest(request) {
+    try {
+        const accessToken = await fetchAccessToken();
+        let driveItems;
+        // @ts-ignore        
+        if (homePathId === "root") {
+            // Handle requests for MyDrive
+            driveItems = await fetchDriveItems(accessToken, `'root' in parents and trashed=false`);
+        } else {
+            // Handle requests for the specified Shared Drive
+            driveItems = await fetchDriveItems(accessToken, `'${homePathId}' in parents and trashed=false`);
+        }
+
         const response = new Response(JSON.stringify(driveItems), {
             status: 200,
             headers: {
@@ -121,9 +167,7 @@ async function getFolderByName(accessToken, parentId, folderName) {
         const data = await response.json();
         if (data.files.length > 0) {
             return data.files[0];
-            console.log ("Data")
         } else {
-          console.log ("no data")
             return null;
         }
     } catch (error) {
@@ -180,71 +224,5 @@ async function fetchDriveItems(accessToken, query, pageToken = '') {
     } catch (error) {
         console.error("Error fetching Drive items:", error);
         throw error;
-    }
-}
-
-//Download Request
-async function handleDownload(request) {
-    try {
-        const accessToken = await fetchAccessToken();
-        const url = new URL(request.url);
-        const path = url.pathname;
-        const decodedPath = decodeURIComponent(path);
-        const filename = decodedPath.split('/').pop();
-        const query = `trashed=false and name='${filename}'`;
-        const fileMetadata = await fetchDriveItems(accessToken, query);
-        if (fileMetadata.length === 0) {
-            return new Response("File not found", { status: 404 });
-        }
-        
-        const fileId = fileMetadata[0].id;
-        const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-        
-        const downloadRequest = new Request(downloadUrl, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-        
-        const fileResponse = await fetch(downloadRequest);
-        
-        return new Response(fileResponse.body, {
-            status: fileResponse.status,
-            statusText: fileResponse.statusText,
-            headers: {
-                'Content-Type': fileResponse.headers.get('Content-Type'),
-                'Content-Disposition': `attachment; filename="${filename}"`,
-            },
-        });
-    } catch (error) {
-        console.error("Error downloading file:", error);
-        return new Response(`Error: ${error.message}`, { status: 500 });
-    }
-}
-
-//Root Url Request
-async function handleRootRequest(request) {
-    try {
-        const accessToken = await fetchAccessToken();
-        let driveItems;
-        // @ts-ignore        
-        if (homePathId === "root") {
-            // Handle requests for MyDrive
-            driveItems = await fetchDriveItems(accessToken, `'root' in parents and trashed=false`);
-        } else {
-            // Handle requests for the specified Shared Drive
-            driveItems = await fetchDriveItems(accessToken, `'${homePathId}' in parents and trashed=false`);
-        }
-
-        const response = new Response(JSON.stringify(driveItems), {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        return response;
-    } catch (error) {
-        console.error("Error:", error.message);
-        return new Response(`Error: ${error.message}`, { status: 500 });
     }
 }
